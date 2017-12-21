@@ -91,7 +91,7 @@ void *lc_resume(LcCoroutine *coroutine, void *argument) {
 	} else if (coroutine->status == LC_SUSPENDED) {
 		if (coroutine->link != coroutine->scheduler->current_coroutine) {
 			error(0, 0, "You can only resume your child coroutine.");
-			return NULL;
+			return NULL ;
 		}
 		if (coroutine->link) {
 			coroutine->link->status = LC_WAITING;
@@ -110,16 +110,15 @@ void *lc_resume(LcCoroutine *coroutine, void *argument) {
 	} else {
 		error(0, 0, "Can not resume %s coroutine.",
 				lc_status_str(coroutine->status));
-		return NULL;
+		return NULL ;
 	}
 }
 
 void *lc_yield(LcScheduler *scheduler, void *argument) {
 	LcCoroutine *coroutine = scheduler->current_coroutine;
 	if (coroutine == NULL) {
-		error(0, 0,
-				"Can not yield thread.");
-		return NULL;
+		error(0, 0, "Can not yield thread.");
+		return NULL ;
 	}
 	coroutine->returnValue = argument;
 	coroutine->status = LC_SUSPENDED;
@@ -142,8 +141,18 @@ LcStatus lc_status(LcCoroutine *coroutine) {
 	return coroutine->status;
 }
 
+bool lc_resumable(LcCoroutine *coroutine) {
+	if (coroutine->status == LC_NEW) {
+		return true;
+	} else if (coroutine->status == LC_SUSPENDED) {
+		return coroutine->link == coroutine->scheduler->current_coroutine;
+	} else {
+		return false;
+	}
+}
+
 bool lc_yieldable(LcScheduler *scheduler) {
-	return scheduler->current_coroutine != NULL;
+	return scheduler->current_coroutine != NULL ;
 }
 
 void lc_free(LcCoroutine *coroutine) {
