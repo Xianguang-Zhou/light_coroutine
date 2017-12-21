@@ -1,5 +1,4 @@
 #include <stdlib.h>
-#include <error.h>
 #include <ucontext.h>
 #include "light_coroutine.h"
 
@@ -62,7 +61,7 @@ static void coroutine_function_wrapper(LcCoroutine *coroutine, void *argument) {
 	coroutine->status = LC_DEAD;
 }
 
-void *lc_resume(LcCoroutine *coroutine, void *argument) {
+LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 	if (coroutine->status == LC_NEW) {
 		coroutine->link = coroutine->scheduler->current_coroutine;
 		getcontext(&(coroutine->ucontext));
@@ -87,11 +86,14 @@ void *lc_resume(LcCoroutine *coroutine, void *argument) {
 		} else {
 			coroutine->scheduler->current_coroutine = NULL;
 		}
-		return coroutine->returnValue;
+		LcArgument returnArgument = { .argument = coroutine->returnValue,
+				.error = NULL };
+		return returnArgument;
 	} else if (coroutine->status == LC_SUSPENDED) {
 		if (coroutine->link != coroutine->scheduler->current_coroutine) {
-			error(0, 0, "You can only resume your child coroutine.");
-			return NULL ;
+			LcArgument returnArgument = { .argument = NULL, .error =
+					"You can only resume your child coroutine." };
+			return returnArgument;
 		}
 		if (coroutine->link) {
 			coroutine->link->status = LC_WAITING;
@@ -106,19 +108,22 @@ void *lc_resume(LcCoroutine *coroutine, void *argument) {
 		} else {
 			coroutine->scheduler->current_coroutine = NULL;
 		}
-		return coroutine->returnValue;
+		LcArgument returnArgument = { .argument = coroutine->returnValue,
+				.error = NULL };
+		return returnArgument;
 	} else {
-		error(0, 0, "Can not resume %s coroutine.",
-				lc_status_str(coroutine->status));
-		return NULL ;
+		LcArgument returnArgument = { .argument = NULL, .error =
+				"You can only resume new or suspended coroutine." };
+		return returnArgument;
 	}
 }
 
-void *lc_yield(LcScheduler *scheduler, void *argument) {
+LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	LcCoroutine *coroutine = scheduler->current_coroutine;
 	if (coroutine == NULL) {
-		error(0, 0, "Can not yield thread.");
-		return NULL ;
+		LcArgument returnArgument = { .argument = NULL, .error =
+				"You can not yield thread, you can only yield coroutine." };
+		return returnArgument;
 	}
 	coroutine->returnValue = argument;
 	coroutine->status = LC_SUSPENDED;
@@ -134,7 +139,9 @@ void *lc_yield(LcScheduler *scheduler, void *argument) {
 		coroutine->link->status = LC_WAITING;
 	}
 	scheduler->current_coroutine = coroutine;
-	return coroutine->returnValue;
+	LcArgument returnArgument = { .argument = coroutine->returnValue, .error =
+	NULL };
+	return returnArgument;
 }
 
 LcStatus lc_status(LcCoroutine *coroutine) {

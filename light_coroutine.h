@@ -13,14 +13,18 @@ typedef enum {
 } LcStatus;
 typedef struct LcCoroutine LcCoroutine;
 typedef struct LcScheduler LcScheduler;
+typedef struct {
+	void *argument;
+	const char *error;
+} LcArgument;
 
 LcScheduler *lc_scheduler_new();
 void lc_scheduler_free(LcScheduler *scheduler);
 LcCoroutine *lc_current(LcScheduler *scheduler);
 LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
 		LcFunction function);
-void *lc_resume(LcCoroutine *coroutine, void *argument);
-void *lc_yield(LcScheduler *scheduler, void *argument);
+LcArgument lc_resume(LcCoroutine *coroutine, void *argument);
+LcArgument lc_yield(LcScheduler *scheduler, void *argument);
 LcStatus lc_status(LcCoroutine *coroutine);
 bool lc_resumable(LcCoroutine *coroutine);
 bool lc_yieldable(LcScheduler *scheduler);
