@@ -26,6 +26,7 @@ LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
 LcArgument lc_resume(LcCoroutine *coroutine, void *argument);
 LcArgument lc_yield(LcScheduler *scheduler, void *argument);
 LcStatus lc_status(LcCoroutine *coroutine);
+const char *lc_status_str(LcStatus status);
 bool lc_resumable(LcCoroutine *coroutine);
 bool lc_yieldable(LcScheduler *scheduler);
 void lc_free(LcCoroutine *coroutine);

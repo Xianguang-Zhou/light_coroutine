@@ -17,7 +17,7 @@ struct LcScheduler {
 	LcCoroutine *current_coroutine;
 };
 
-static const char *lc_status_str(LcStatus status) {
+const char *lc_status_str(LcStatus status) {
 	switch (status) {
 	case LC_NEW:
 		return "new";
