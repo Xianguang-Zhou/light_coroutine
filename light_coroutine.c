@@ -9,7 +9,7 @@ struct LcCoroutine {
 	LcFunction function;
 	LcStatus status;
 	size_t stack_size;
-	void *returnValue;
+	void *return_value;
 };
 
 struct LcScheduler {
@@ -57,7 +57,7 @@ LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
 }
 
 static void coroutine_function_wrapper(LcCoroutine *coroutine, void *argument) {
-	coroutine->returnValue = coroutine->function(argument);
+	coroutine->return_value = coroutine->function(argument);
 	coroutine->status = LC_DEAD;
 }
 
@@ -86,21 +86,21 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 		} else {
 			coroutine->scheduler->current_coroutine = NULL;
 		}
-		LcArgument returnArgument = { .argument = coroutine->returnValue,
+		LcArgument return_argument = { .argument = coroutine->return_value,
 				.error = NULL };
-		return returnArgument;
+		return return_argument;
 	} else if (coroutine->status == LC_SUSPENDED) {
 		if (coroutine->link != coroutine->scheduler->current_coroutine) {
-			LcArgument returnArgument = { .argument = NULL, .error =
+			LcArgument return_argument = { .argument = NULL, .error =
 					"You can only resume your child coroutine." };
-			return returnArgument;
+			return return_argument;
 		}
 		if (coroutine->link) {
 			coroutine->link->status = LC_WAITING;
 		}
 		coroutine->status = LC_RUNNING;
 		coroutine->scheduler->current_coroutine = coroutine;
-		coroutine->returnValue = argument;
+		coroutine->return_value = argument;
 		swapcontext(coroutine->ucontext.uc_link, &(coroutine->ucontext));
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
@@ -108,24 +108,24 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 		} else {
 			coroutine->scheduler->current_coroutine = NULL;
 		}
-		LcArgument returnArgument = { .argument = coroutine->returnValue,
+		LcArgument return_argument = { .argument = coroutine->return_value,
 				.error = NULL };
-		return returnArgument;
+		return return_argument;
 	} else {
-		LcArgument returnArgument = { .argument = NULL, .error =
+		LcArgument return_argument = { .argument = NULL, .error =
 				"You can only resume new or suspended coroutine." };
-		return returnArgument;
+		return return_argument;
 	}
 }
 
 LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	LcCoroutine *coroutine = scheduler->current_coroutine;
 	if (coroutine == NULL) {
-		LcArgument returnArgument = { .argument = NULL, .error =
+		LcArgument return_argument = { .argument = NULL, .error =
 				"You can not yield thread, you can only yield coroutine." };
-		return returnArgument;
+		return return_argument;
 	}
-	coroutine->returnValue = argument;
+	coroutine->return_value = argument;
 	coroutine->status = LC_SUSPENDED;
 	if (coroutine->link) {
 		coroutine->link->status = LC_RUNNING;
@@ -139,9 +139,9 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 		coroutine->link->status = LC_WAITING;
 	}
 	scheduler->current_coroutine = coroutine;
-	LcArgument returnArgument = { .argument = coroutine->returnValue, .error =
+	LcArgument return_argument = { .argument = coroutine->return_value, .error =
 	NULL };
-	return returnArgument;
+	return return_argument;
 }
 
 LcStatus lc_status(LcCoroutine *coroutine) {
