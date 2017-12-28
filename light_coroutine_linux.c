@@ -1,3 +1,5 @@
+#ifndef _WIN32
+
 #include <stdlib.h>
 #include <ucontext.h>
 #include "light_coroutine.h"
@@ -17,25 +19,8 @@ struct LcScheduler {
 	LcCoroutine *current_coroutine;
 };
 
-const char *lc_status_str(LcStatus status) {
-	switch (status) {
-	case LC_NEW:
-		return "new";
-	case LC_RUNNING:
-		return "running";
-	case LC_SUSPENDED:
-		return "suspended";
-	case LC_WAITING:
-		return "waiting";
-	case LC_DEAD:
-		return "dead";
-	default:
-		return "unknown";
-	}
-}
-
 LcScheduler *lc_scheduler_new() {
-	return calloc(1, sizeof(LcScheduler));
+	return (LcScheduler *) calloc(1, sizeof(LcScheduler));
 }
 
 void lc_scheduler_free(LcScheduler *scheduler) {
@@ -48,7 +33,7 @@ LcCoroutine *lc_current(LcScheduler *scheduler) {
 
 LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
 		LcFunction function) {
-	LcCoroutine *coroutine = calloc(1, sizeof(LcCoroutine));
+	LcCoroutine *coroutine = (LcCoroutine *) calloc(1, sizeof(LcCoroutine));
 	coroutine->scheduler = scheduler;
 	coroutine->stack_size = stack_size;
 	coroutine->function = function;
@@ -56,8 +41,8 @@ LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
 	return coroutine;
 }
 
-static void coroutine_function_wrapper(LcCoroutine *coroutine, void *argument) {
-	coroutine->return_value = coroutine->function(argument);
+static void coroutine_function_wrapper(LcCoroutine *coroutine) {
+	coroutine->return_value = coroutine->function(coroutine->return_value);
 	coroutine->status = LC_DEAD;
 }
 
@@ -76,9 +61,9 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 		}
 		coroutine->status = LC_RUNNING;
 		coroutine->scheduler->current_coroutine = coroutine;
+		coroutine->return_value = argument;
 		makecontext(&(coroutine->ucontext),
-				(void (*)(void)) coroutine_function_wrapper, 2, coroutine,
-				argument);
+				(void (*)(void)) coroutine_function_wrapper, 1, coroutine);
 		swapcontext(coroutine->ucontext.uc_link, &(coroutine->ucontext));
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
@@ -169,3 +154,5 @@ void lc_free(LcCoroutine *coroutine) {
 	}
 	free(coroutine);
 }
+
+#endif

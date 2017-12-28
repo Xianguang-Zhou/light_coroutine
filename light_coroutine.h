@@ -5,18 +5,19 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include <stdbool.h>
 
 typedef void *(*LcFunction)(void *argument);
 typedef enum {
 	LC_NEW, LC_RUNNING, LC_SUSPENDED, LC_WAITING, LC_DEAD
-} LcStatus;
+}LcStatus;
 typedef struct LcCoroutine LcCoroutine;
 typedef struct LcScheduler LcScheduler;
 typedef struct {
 	void *argument;
 	const char *error;
-} LcArgument;
+}LcArgument;
 
 LcScheduler *lc_scheduler_new();
 void lc_scheduler_free(LcScheduler *scheduler);

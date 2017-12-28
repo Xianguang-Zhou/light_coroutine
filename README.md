@@ -1,20 +1,32 @@
 # light_coroutine
 
-"light_coroutine" is a C coroutine library for Unix/Linux.
+"light_coroutine" is a C coroutine library for Linux, Unix and Windows.
 
 ## Dependencies
 
 To compile "light_coroutine" from source you need following packages:
 
-* C compiler
-* C library
+* C, C++ compiler
+* C, C++ library
 * make
 * cmake >= 2.6
 
 For Ubuntu 16.04, install dependencies by this command:
 
 ```sh
-sudo apt-get install gcc libc6-dev make cmake
+sudo apt-get install g++ make cmake
+```
+
+Install Mingw-w64 cross compiler if you need to develop i686 Windows program:
+
+```sh
+sudo apt-get install g++-mingw-w64-i686
+```
+
+Install Mingw-w64 cross compiler if you need to develop x86_64 Windows program:
+
+```sh
+sudo apt-get install g++-mingw-w64-x86-64
 ```
 
 ## Getting source code
@@ -59,6 +71,25 @@ cmake -G "Eclipse CDT4 - Unix Makefiles" \
     -DCMAKE_ECLIPSE_GENERATE_SOURCE_PROJECT=TRUE -DCMAKE_BUILD_TYPE=Debug \
     -DCMAKE_ECLIPSE_VERSION=3.7 ../light_coroutine
 ```
+
+If you need to develop Windows program by Mingw-w64 cross compiler, set CMake toolchain file like this:
+
+```sh
+cmake -D CMAKE_TOOLCHAIN_FILE=../light_coroutine/toolchain/windows_xp-i686.cmake -DCMAKE_BUILD_TYPE=Release ../light_coroutine
+```
+
+CMake toolchain files are in the "toolchain" directory.
+
+Relationships between CMake toolchain file and operating system:
+
+| CMake toolchain file             | operating system           |
+| -------------------------------- | -------------------------- |
+| windows_xp-i686.cmake            | Windows XP i686            |
+| windows_xp-x86_64.cmake          | Windows XP x86_64          |
+| windows_server_2003-i686.cmake   | Windows Server 2003 i686   |
+| windows_server_2003-x86_64.cmake | Windows Server 2003 x86_64 |
+| windows-i686.cmake               | later Windows i686         |
+| windows-x86_64.cmake             | later Windows x86_64       |
 
 ### Compiling and Linking
 
