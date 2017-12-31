@@ -64,7 +64,7 @@ cd light_coroutine_build
 cmake -DCMAKE_BUILD_TYPE=Release ../light_coroutine
 ```
 
-To develop LightCoroutine, generate Makefile and Eclipse project files by this command:
+To develop "light_coroutine", generate Makefile and Eclipse project files by this command:
 
 ```sh
 cmake -G "Eclipse CDT4 - Unix Makefiles" \
