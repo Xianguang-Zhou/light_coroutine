@@ -75,7 +75,8 @@ cmake -G "Eclipse CDT4 - Unix Makefiles" \
 If you need to develop Windows program by Mingw-w64 cross compiler, set CMake toolchain file like this:
 
 ```sh
-cmake -D CMAKE_TOOLCHAIN_FILE=../light_coroutine/toolchain/windows_xp-i686.cmake -DCMAKE_BUILD_TYPE=Release ../light_coroutine
+cmake -D CMAKE_TOOLCHAIN_FILE=../light_coroutine/toolchain/windows_xp-i686.cmake \
+    -DCMAKE_BUILD_TYPE=Release ../light_coroutine
 ```
 
 CMake toolchain files are in the "toolchain" directory.
