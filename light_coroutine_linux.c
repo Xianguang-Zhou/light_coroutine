@@ -112,18 +112,7 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	}
 	coroutine->return_value = argument;
 	coroutine->status = LC_SUSPENDED;
-	if (coroutine->link) {
-		coroutine->link->status = LC_RUNNING;
-		scheduler->current_coroutine = coroutine->link;
-	} else {
-		scheduler->current_coroutine = NULL;
-	}
 	swapcontext(&(coroutine->ucontext), coroutine->ucontext.uc_link);
-	coroutine->status = LC_RUNNING;
-	if (coroutine->link) {
-		coroutine->link->status = LC_WAITING;
-	}
-	scheduler->current_coroutine = coroutine;
 	LcArgument return_argument = { .argument = coroutine->return_value, .error =
 	NULL };
 	return return_argument;

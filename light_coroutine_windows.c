@@ -163,21 +163,10 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	coroutine->return_value = argument;
 	coroutine->status = LC_SUSPENDED;
 	if (coroutine->link) {
-		coroutine->link->status = LC_RUNNING;
-		scheduler->current_coroutine = coroutine->link;
-	} else {
-		scheduler->current_coroutine = NULL;
-	}
-	if (coroutine->link) {
 		SwitchToFiber(coroutine->link->fiber);
 	} else {
 		SwitchToFiber(coroutine->scheduler->fiber);
 	}
-	coroutine->status = LC_RUNNING;
-	if (coroutine->link) {
-		coroutine->link->status = LC_WAITING;
-	}
-	scheduler->current_coroutine = coroutine;
 	LcArgument return_argument;
 	return_argument.argument = coroutine->return_value;
 	return_argument.error = NULL;
