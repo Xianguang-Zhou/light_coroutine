@@ -1,6 +1,6 @@
 # light_coroutine
 
-"light_coroutine" is a C coroutine library for Linux, Unix and Windows.
+"light_coroutine" is a C coroutine library for Linux, Unix, Windows and Mac OS X.
 
 ## Dependencies
 

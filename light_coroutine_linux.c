@@ -9,6 +9,9 @@
 #ifndef _WIN32
 
 #include <stdlib.h>
+#if defined(__APPLE__) && defined(__MACH__)
+#define _XOPEN_SOURCE
+#endif
 #include <ucontext.h>
 #include "light_coroutine.h"
 
