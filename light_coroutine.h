@@ -21,24 +21,22 @@ typedef enum {
 	LC_NEW, LC_RUNNING, LC_SUSPENDED, LC_WAITING, LC_DEAD
 }LcStatus;
 typedef struct LcCoroutine LcCoroutine;
-typedef struct LcScheduler LcScheduler;
 typedef struct {
 	void *argument;
 	const char *error;
 }LcArgument;
 
-LcScheduler *lc_scheduler_new();
-void lc_scheduler_free(LcScheduler *scheduler);
-LcCoroutine *lc_current(LcScheduler *scheduler);
-LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
-		LcFunction function);
+void lc_open();
+void lc_close();
+LcCoroutine *lc_current();
+LcCoroutine *lc_new(size_t stack_size, LcFunction function);
 LcArgument lc_resume(LcCoroutine *coroutine, void *argument);
-LcArgument lc_yield(LcScheduler *scheduler, void *argument);
+LcArgument lc_yield(void *argument);
+bool lc_resumable(LcCoroutine *coroutine);
+bool lc_yieldable();
+void lc_free(LcCoroutine *coroutine);
 LcStatus lc_status(LcCoroutine *coroutine);
 const char *lc_status_str(LcStatus status);
-bool lc_resumable(LcCoroutine *coroutine);
-bool lc_yieldable(LcScheduler *scheduler);
-void lc_free(LcCoroutine *coroutine);
 size_t lc_stack_size(LcCoroutine *coroutine);
 
 #ifdef __cplusplus

@@ -11,7 +11,7 @@ To compile "light_coroutine" from source you need following packages:
 * make
 * cmake >= 2.6
 
-For Ubuntu 16.04, install dependencies by this command:
+On Ubuntu 16.04, install dependencies by this command:
 
 ```sh
 sudo apt-get install g++ make cmake
@@ -103,6 +103,12 @@ make
 ```sh
 sudo make install
 ```
+
+## Windows tips
+
+* On i686 Windows, if you see an error message like "libgcc_s_sjlj-1.dll was not found", copy the file "/usr/lib/gcc/i686-w64-mingw32/5.3-win32/libgcc_s_sjlj-1.dll" to the directory containing your application executable file.
+
+* On x86-64 Windows, if you see an error message like "libgcc_s_seh-1.dll was not found", copy the file "/usr/lib/gcc/x86_64-w64-mingw32/5.3-win32/libgcc_s_seh-1.dll" to the directory containing your application executable file.
 
 ## Report bug
 

@@ -22,7 +22,6 @@
 #include "light_coroutine.h"
 
 struct LcCoroutine {
-	LcScheduler *scheduler;
 	LcCoroutine *link;
 	LPVOID fiber;
 	LcFunction function;
@@ -31,31 +30,34 @@ struct LcCoroutine {
 	void *return_value;
 };
 
-struct LcScheduler {
+typedef struct {
 	LPVOID fiber;
 	LcCoroutine *current_coroutine;
-};
+} LcScheduler;
 
-LcScheduler *lc_scheduler_new() {
+#ifdef _MSC_VER
+static __declspec(thread) LcScheduler *scheduler;
+#else
+static __thread LcScheduler *scheduler;
+#endif
+
+void lc_open() {
 #if _WIN32_WINNT >= 0x0600 // Windows Vista or Windows Server 2008
 	if (!IsThreadAFiber()) {
 #endif
-		LcScheduler * scheduler = (LcScheduler *)malloc(sizeof(LcScheduler));
+		scheduler = (LcScheduler *)malloc(sizeof(LcScheduler));
 #if _WIN32_WINNT >= 0x0502 // Windows Server 2003
 		scheduler->fiber = ConvertThreadToFiberEx(scheduler, FIBER_FLAG_FLOAT_SWITCH);
 #else // Windows XP
 		scheduler->fiber = ConvertThreadToFiber(scheduler);
 #endif
 		scheduler->current_coroutine = NULL;
-		return scheduler;
 #if _WIN32_WINNT >= 0x0600 // Windows Vista or Windows Server 2008
-	} else {
-		return NULL;
 	}
 #endif
 }
 
-void lc_scheduler_free(LcScheduler *scheduler) {
+void lc_close() {
 	if (scheduler->current_coroutine == NULL
 #if _WIN32_WINNT >= 0x0600 // Windows Vista or Windows Server 2008
 			&& IsThreadAFiber()
@@ -69,14 +71,12 @@ void lc_scheduler_free(LcScheduler *scheduler) {
 	}
 }
 
-LcCoroutine *lc_current(LcScheduler *scheduler) {
+LcCoroutine *lc_current() {
 	return scheduler->current_coroutine;
 }
 
-LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
-		LcFunction function) {
-	LcCoroutine *coroutine = (LcCoroutine *)calloc(1, sizeof(LcCoroutine));
-	coroutine->scheduler = scheduler;
+LcCoroutine *lc_new(size_t stack_size, LcFunction function) {
+	LcCoroutine *coroutine = (LcCoroutine *) calloc(1, sizeof(LcCoroutine));
 	coroutine->stack_size = stack_size;
 	coroutine->function = function;
 	coroutine->status = LC_NEW;
@@ -89,18 +89,18 @@ static void coroutine_function_wrapper(LcCoroutine *coroutine) {
 	if (coroutine->link) {
 		SwitchToFiber(coroutine->link->fiber);
 	} else {
-		SwitchToFiber(coroutine->scheduler->fiber);
+		SwitchToFiber(scheduler->fiber);
 	}
 }
 
 LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 	if (coroutine->status == LC_NEW) {
-		coroutine->link = coroutine->scheduler->current_coroutine;
+		coroutine->link = scheduler->current_coroutine;
 		if (coroutine->link) {
 			coroutine->link->status = LC_WAITING;
 		}
 		coroutine->status = LC_RUNNING;
-		coroutine->scheduler->current_coroutine = coroutine;
+		scheduler->current_coroutine = coroutine;
 #if _WIN32_WINNT >= 0x0502 // Windows Server 2003
 		coroutine->fiber = CreateFiberEx(
 				coroutine->stack_size - 1,
@@ -120,16 +120,16 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 		SwitchToFiber(coroutine->fiber);
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
-			coroutine->scheduler->current_coroutine = coroutine->link;
+			scheduler->current_coroutine = coroutine->link;
 		} else {
-			coroutine->scheduler->current_coroutine = NULL;
+			scheduler->current_coroutine = NULL;
 		}
 		LcArgument return_argument;
 		return_argument.argument = coroutine->return_value,
 		return_argument.error = NULL;
 		return return_argument;
 	} else if (coroutine->status == LC_SUSPENDED) {
-		if (coroutine->link != coroutine->scheduler->current_coroutine) {
+		if (coroutine->link != scheduler->current_coroutine) {
 			LcArgument return_argument;
 			return_argument.argument = NULL;
 			return_argument.error = "You can only resume your child coroutine.";
@@ -139,14 +139,14 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 			coroutine->link->status = LC_WAITING;
 		}
 		coroutine->status = LC_RUNNING;
-		coroutine->scheduler->current_coroutine = coroutine;
+		scheduler->current_coroutine = coroutine;
 		coroutine->return_value = argument;
 		SwitchToFiber(coroutine->fiber);
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
-			coroutine->scheduler->current_coroutine = coroutine->link;
+			scheduler->current_coroutine = coroutine->link;
 		} else {
-			coroutine->scheduler->current_coroutine = NULL;
+			scheduler->current_coroutine = NULL;
 		}
 		LcArgument return_argument;
 		return_argument.argument = coroutine->return_value;
@@ -160,7 +160,7 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 	}
 }
 
-LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
+LcArgument lc_yield(void *argument) {
 	LcCoroutine *coroutine = scheduler->current_coroutine;
 	if (coroutine == NULL) {
 		LcArgument return_argument;
@@ -173,7 +173,7 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	if (coroutine->link) {
 		SwitchToFiber(coroutine->link->fiber);
 	} else {
-		SwitchToFiber(coroutine->scheduler->fiber);
+		SwitchToFiber(scheduler->fiber);
 	}
 	LcArgument return_argument;
 	return_argument.argument = coroutine->return_value;
@@ -181,21 +181,17 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	return return_argument;
 }
 
-LcStatus lc_status(LcCoroutine *coroutine) {
-	return coroutine->status;
-}
-
 bool lc_resumable(LcCoroutine *coroutine) {
 	if (coroutine->status == LC_NEW) {
 		return true;
 	} else if (coroutine->status == LC_SUSPENDED) {
-		return coroutine->link == coroutine->scheduler->current_coroutine;
+		return coroutine->link == scheduler->current_coroutine;
 	} else {
 		return false;
 	}
 }
 
-bool lc_yieldable(LcScheduler *scheduler) {
+bool lc_yieldable() {
 	return scheduler->current_coroutine != NULL;
 }
 
@@ -204,6 +200,10 @@ void lc_free(LcCoroutine *coroutine) {
 		DeleteFiber(coroutine->fiber);
 	}
 	free(coroutine);
+}
+
+LcStatus lc_status(LcCoroutine *coroutine) {
+	return coroutine->status;
 }
 
 size_t lc_stack_size(LcCoroutine *coroutine) {

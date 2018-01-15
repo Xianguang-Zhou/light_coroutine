@@ -16,7 +16,6 @@
 #include "light_coroutine.h"
 
 struct LcCoroutine {
-	LcScheduler *scheduler;
 	LcCoroutine *link;
 	ucontext_t ucontext;
 	LcFunction function;
@@ -25,27 +24,27 @@ struct LcCoroutine {
 	void *return_value;
 };
 
-struct LcScheduler {
+typedef struct {
 	ucontext_t ucontext;
 	LcCoroutine *current_coroutine;
-};
+} LcScheduler;
 
-LcScheduler *lc_scheduler_new() {
-	return (LcScheduler *) calloc(1, sizeof(LcScheduler));
+static __thread LcScheduler *scheduler;
+
+void lc_open() {
+	scheduler = (LcScheduler *) calloc(1, sizeof(LcScheduler));
 }
 
-void lc_scheduler_free(LcScheduler *scheduler) {
+void lc_close() {
 	free(scheduler);
 }
 
-LcCoroutine *lc_current(LcScheduler *scheduler) {
+LcCoroutine *lc_current() {
 	return scheduler->current_coroutine;
 }
 
-LcCoroutine *lc_new(LcScheduler *scheduler, size_t stack_size,
-		LcFunction function) {
+LcCoroutine *lc_new(size_t stack_size, LcFunction function) {
 	LcCoroutine *coroutine = (LcCoroutine *) calloc(1, sizeof(LcCoroutine));
-	coroutine->scheduler = scheduler;
 	coroutine->stack_size = stack_size;
 	coroutine->function = function;
 	coroutine->status = LC_NEW;
@@ -59,7 +58,7 @@ static void coroutine_function_wrapper(LcCoroutine *coroutine) {
 
 LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 	if (coroutine->status == LC_NEW) {
-		coroutine->link = coroutine->scheduler->current_coroutine;
+		coroutine->link = scheduler->current_coroutine;
 		getcontext(&(coroutine->ucontext));
 		coroutine->ucontext.uc_stack.ss_sp = malloc(coroutine->stack_size);
 		coroutine->ucontext.uc_stack.ss_size = coroutine->stack_size;
@@ -68,25 +67,25 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 			coroutine->ucontext.uc_link = &(coroutine->link->ucontext);
 			coroutine->link->status = LC_WAITING;
 		} else {
-			coroutine->ucontext.uc_link = &(coroutine->scheduler->ucontext);
+			coroutine->ucontext.uc_link = &(scheduler->ucontext);
 		}
 		coroutine->status = LC_RUNNING;
-		coroutine->scheduler->current_coroutine = coroutine;
+		scheduler->current_coroutine = coroutine;
 		coroutine->return_value = argument;
 		makecontext(&(coroutine->ucontext),
 				(void (*)(void)) coroutine_function_wrapper, 1, coroutine);
 		swapcontext(coroutine->ucontext.uc_link, &(coroutine->ucontext));
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
-			coroutine->scheduler->current_coroutine = coroutine->link;
+			scheduler->current_coroutine = coroutine->link;
 		} else {
-			coroutine->scheduler->current_coroutine = NULL;
+			scheduler->current_coroutine = NULL;
 		}
 		LcArgument return_argument = { .argument = coroutine->return_value,
 				.error = NULL };
 		return return_argument;
 	} else if (coroutine->status == LC_SUSPENDED) {
-		if (coroutine->link != coroutine->scheduler->current_coroutine) {
+		if (coroutine->link != scheduler->current_coroutine) {
 			LcArgument return_argument = { .argument = NULL, .error =
 					"You can only resume your child coroutine." };
 			return return_argument;
@@ -95,14 +94,14 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 			coroutine->link->status = LC_WAITING;
 		}
 		coroutine->status = LC_RUNNING;
-		coroutine->scheduler->current_coroutine = coroutine;
+		scheduler->current_coroutine = coroutine;
 		coroutine->return_value = argument;
 		swapcontext(coroutine->ucontext.uc_link, &(coroutine->ucontext));
 		if (coroutine->link) {
 			coroutine->link->status = LC_RUNNING;
-			coroutine->scheduler->current_coroutine = coroutine->link;
+			scheduler->current_coroutine = coroutine->link;
 		} else {
-			coroutine->scheduler->current_coroutine = NULL;
+			scheduler->current_coroutine = NULL;
 		}
 		LcArgument return_argument = { .argument = coroutine->return_value,
 				.error = NULL };
@@ -114,7 +113,7 @@ LcArgument lc_resume(LcCoroutine *coroutine, void *argument) {
 	}
 }
 
-LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
+LcArgument lc_yield(void *argument) {
 	LcCoroutine *coroutine = scheduler->current_coroutine;
 	if (coroutine == NULL) {
 		LcArgument return_argument = { .argument = NULL, .error =
@@ -129,21 +128,17 @@ LcArgument lc_yield(LcScheduler *scheduler, void *argument) {
 	return return_argument;
 }
 
-LcStatus lc_status(LcCoroutine *coroutine) {
-	return coroutine->status;
-}
-
 bool lc_resumable(LcCoroutine *coroutine) {
 	if (coroutine->status == LC_NEW) {
 		return true;
 	} else if (coroutine->status == LC_SUSPENDED) {
-		return coroutine->link == coroutine->scheduler->current_coroutine;
+		return coroutine->link == scheduler->current_coroutine;
 	} else {
 		return false;
 	}
 }
 
-bool lc_yieldable(LcScheduler *scheduler) {
+bool lc_yieldable() {
 	return scheduler->current_coroutine != NULL ;
 }
 
@@ -153,6 +148,10 @@ void lc_free(LcCoroutine *coroutine) {
 		free(stack);
 	}
 	free(coroutine);
+}
+
+LcStatus lc_status(LcCoroutine *coroutine) {
+	return coroutine->status;
 }
 
 size_t lc_stack_size(LcCoroutine *coroutine) {
