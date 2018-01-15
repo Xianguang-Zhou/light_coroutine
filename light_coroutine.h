@@ -39,6 +39,7 @@ const char *lc_status_str(LcStatus status);
 bool lc_resumable(LcCoroutine *coroutine);
 bool lc_yieldable(LcScheduler *scheduler);
 void lc_free(LcCoroutine *coroutine);
+size_t lc_stack_size(LcCoroutine *coroutine);
 
 #ifdef __cplusplus
 }

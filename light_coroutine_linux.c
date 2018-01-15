@@ -155,4 +155,8 @@ void lc_free(LcCoroutine *coroutine) {
 	free(coroutine);
 }
 
+size_t lc_stack_size(LcCoroutine *coroutine) {
+	return coroutine->stack_size;
+}
+
 #endif
