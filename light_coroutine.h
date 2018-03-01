@@ -38,6 +38,8 @@ void lc_free(LcCoroutine *coroutine);
 LcStatus lc_status(LcCoroutine *coroutine);
 const char *lc_status_str(LcStatus status);
 size_t lc_stack_size(LcCoroutine *coroutine);
+void lc_set_data(void *data);
+void *lc_get_data();
 
 #ifdef __cplusplus
 }
