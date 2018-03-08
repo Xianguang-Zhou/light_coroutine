@@ -212,17 +212,17 @@ size_t lc_stack_size(LcCoroutine *coroutine) {
 	return coroutine->stack_size;
 }
 
-void lc_set_data(void *data) {
-	if (scheduler->current_coroutine != NULL) {
-		scheduler->current_coroutine->local_data = data;
+void lc_set_data(LcCoroutine *coroutine, void *data) {
+	if (coroutine != NULL) {
+		coroutine->local_data = data;
 	} else {
 		scheduler->local_data = data;
 	}
 }
 
-void *lc_get_data() {
-	if (scheduler->current_coroutine != NULL) {
-		return scheduler->current_coroutine->local_data;
+void *lc_get_data(LcCoroutine *coroutine) {
+	if (coroutine != NULL) {
+		return coroutine->local_data;
 	} else {
 		return scheduler->local_data;
 	}
