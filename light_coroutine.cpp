@@ -56,18 +56,7 @@ bool Coroutine::resumable() const {
 
 Status Coroutine::status() const {
 	LcStatus c_status = lc_status((LcCoroutine*) c_ptr);
-	switch (c_status) {
-	case LC_NEW:
-		return Status::NEW;
-	case LC_RUNNING:
-		return Status::RUNNING;
-	case LC_SUSPENDED:
-		return Status::SUSPENDED;
-	case LC_WAITING:
-		return Status::WAITING;
-	case LC_DEAD:
-		return Status::DEAD;
-	}
+	return static_cast<Status>(c_status);
 }
 
 size_t Coroutine::stack_size() const {
@@ -126,20 +115,7 @@ bool yieldable() {
 }
 
 std::string status_str(const Status& status) {
-	switch (status) {
-	case Status::NEW:
-		return "new";
-	case Status::RUNNING:
-		return "running";
-	case Status::SUSPENDED:
-		return "suspended";
-	case Status::WAITING:
-		return "waiting";
-	case Status::DEAD:
-		return "dead";
-	default:
-		return "unknown";
-	}
+	return lc_status_str(static_cast<LcStatus>(status));
 }
 
 void set_data(const boost::any& data) {
