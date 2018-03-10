@@ -25,9 +25,7 @@ enum class Status {
 
 class Exception {
 public:
-	explicit Exception(const char *error) :
-			message(error) {
-	}
+	explicit Exception(const char *error);
 	const std::string message;
 };
 
@@ -40,6 +38,12 @@ public:
 	size_t stack_size() const;
 	void set_data(const boost::any& data);
 	boost::any get_data() const;
+	inline void data(const boost::any& data) {
+		set_data(data);
+	}
+	inline boost::any data() const {
+		return get_data();
+	}
 private:
 	void *c_ptr;
 	boost::weak_ptr<Coroutine> weak_ptr;
@@ -47,8 +51,7 @@ private:
 	boost::any return_value;
 	boost::any local_data;
 	static void *coroutine_function_wrapper(void *argument);
-	explicit Coroutine() {
-	}
+	explicit Coroutine();
 
 	friend boost::shared_ptr<Coroutine> create(const size_t& stack_size,
 			const Function& function);
@@ -65,6 +68,12 @@ bool yieldable();
 std::string status_str(const Status& status);
 void set_data(const boost::any& data);
 boost::any get_data();
+inline void data(const boost::any& data) {
+	set_data(data);
+}
+inline boost::any data() {
+	return get_data();
+}
 
 }
 #endif /* LIGHT_COROUTINE_HPP */

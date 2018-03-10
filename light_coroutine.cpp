@@ -19,11 +19,18 @@ public:
 
 static thread_local Scheduler *scheduler;
 
+Exception::Exception(const char *error) :
+		message(error) {
+}
+
 void *Coroutine::coroutine_function_wrapper(void *argument) {
 	Coroutine *coroutine_ptr = scheduler->current_coroutine.get();
 	coroutine_ptr->return_value = coroutine_ptr->function(
 			coroutine_ptr->return_value);
 	return nullptr;
+}
+
+Coroutine::Coroutine() {
 }
 
 Coroutine::~Coroutine() {
