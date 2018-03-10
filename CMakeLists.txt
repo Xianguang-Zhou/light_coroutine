@@ -5,15 +5,31 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 project(light_coroutine)
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1)
 
-aux_source_directory(. SRC_LIST)
-install(FILES light_coroutine.h DESTINATION include)
+set(CMAKE_CXX_STANDARD 11)
 
-set(LIBRARY_NAME ${PROJECT_NAME})
-add_library(${LIBRARY_NAME} SHARED ${SRC_LIST})
+find_package(Boost REQUIRED)
+if(NOT Boost_FOUND)
+    message(FATAL_ERROR "Boost is not found.")
+endif()
 
-set(STATIC_LIBRARY_NAME "${LIBRARY_NAME}_static")
-add_library(${STATIC_LIBRARY_NAME} STATIC ${SRC_LIST})
+install(FILES light_coroutine.h light_coroutine.hpp DESTINATION include)
 
-install(TARGETS ${LIBRARY_NAME} ${STATIC_LIBRARY_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)
+aux_source_directory(. CPP_SRC_LIST)
+set(C_SRC_LIST ${CPP_SRC_LIST})
+list(REMOVE_ITEM C_SRC_LIST "./light_coroutine.cpp")
+
+set(C_LIBRARY_NAME ${PROJECT_NAME})
+add_library(${C_LIBRARY_NAME} SHARED ${C_SRC_LIST})
+
+set(C_STATIC_LIBRARY_NAME "${C_LIBRARY_NAME}_static")
+add_library(${C_STATIC_LIBRARY_NAME} STATIC ${C_SRC_LIST})
+
+set(CPP_LIBRARY_NAME "${PROJECT_NAME}_cpp")
+add_library(${CPP_LIBRARY_NAME} SHARED ${CPP_SRC_LIST})
+
+set(CPP_STATIC_LIBRARY_NAME "${CPP_LIBRARY_NAME}_static")
+add_library(${CPP_STATIC_LIBRARY_NAME} STATIC ${CPP_SRC_LIST})
+
+install(TARGETS ${C_LIBRARY_NAME} ${C_STATIC_LIBRARY_NAME} ${CPP_LIBRARY_NAME} ${CPP_STATIC_LIBRARY_NAME} LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)

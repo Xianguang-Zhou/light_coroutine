@@ -1,6 +1,6 @@
 # light_coroutine
 
-"light_coroutine" is a C coroutine library for Linux, Unix, Windows and Mac OS X.
+"light_coroutine" is a C/C++ coroutine library for Linux, Unix, Windows and Mac OS X.
 
 ## Dependencies
 
@@ -9,12 +9,15 @@ To compile "light_coroutine" from source you need following packages:
 * C, C++ compiler
 * C, C++ library
 * make
-* cmake >= 2.6
+* cmake >= 3.1
+* libboost-dev
+
+C++ compiler needs support C++ 11.
 
 On Ubuntu 16.04, install dependencies by this command:
 
 ```sh
-sudo apt-get install g++ make cmake
+sudo apt-get install g++ make cmake libboost-dev
 ```
 
 Install Mingw-w64 cross compiler if you need to develop i686 Windows program:
